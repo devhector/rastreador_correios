@@ -2,6 +2,7 @@
 
 import requests as r
 import sys as s
+from datetime import timedelta, datetime
 
 emojis = {
 	'trânsito': '🚚',
@@ -40,6 +41,10 @@ def print_status(status):
 	for item in status['eventos']:
 		print(create_string(item))
 
+def convert_date(date):
+	date = date[8:10] + '/' + date[5:7] + '/' + date[0:4] + ' ' + date[11:16]
+	return date
+
 def main():
 
 	if len(s.argv) < 2:
@@ -47,12 +52,15 @@ def main():
 		return
 
 	for i in range(1, len(s.argv)):
-		codigo = s.argv[i]
-		status = get_status(codigo)
+		code = s.argv[i]
+		status = get_status(code)
+		last_date = convert_date(status['eventos'][0]['dtHrCriado'])
+		last_date = datetime.strptime(last_date, '%d/%m/%Y %H:%M')
+		status_date = str(datetime.now() - last_date)
 		if status is None:
-			print(f'\n{emojis["erro"]} Código {codigo} inválido')
+			print(f'\n{emojis["erro"]} Código {code} inválido')
 		else:
-			print(f'\n{emojis["postado"]} Código {codigo}')
+			print(f'\n{emojis["postado"]} Código {code} - Ultima atualização há {status_date[0]} dias')
 			print_status(status)
 
 main()
