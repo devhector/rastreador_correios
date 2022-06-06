@@ -2,7 +2,7 @@
 
 import requests as r
 import sys as s
-from datetime import timedelta, datetime
+from datetime import datetime
 
 emojis = {
 	'trânsito': '🚚',
@@ -43,7 +43,22 @@ def print_status(status):
 
 def convert_date(date):
 	date = date[8:10] + '/' + date[5:7] + '/' + date[0:4] + ' ' + date[11:16]
+	date = datetime.strptime(date, '%d/%m/%Y %H:%M')
 	return date
+
+def print_all(status):
+	last_date = convert_date(status['eventos'][0]['dtHrCriado'])
+	status_date = datetime.now() - last_date
+	status_date = status_date.days
+
+	if status_date < 2:
+		status_date = f'Última atualização há {status_date} dia'
+		print(f'\n{emojis["postado"]} Cód: {status["codObjeto"]} - {status_date}')
+	else:
+		status_date = f'Última atualização há {status_date} dias'
+		print(f'\n{emojis["postado"]} Cód: {status["codObjeto"]} - {status_date}')
+
+	print_status(status)
 
 def main():
 
@@ -54,13 +69,10 @@ def main():
 	for i in range(1, len(s.argv)):
 		code = s.argv[i]
 		status = get_status(code)
-		last_date = convert_date(status['eventos'][0]['dtHrCriado'])
-		last_date = datetime.strptime(last_date, '%d/%m/%Y %H:%M')
-		status_date = str(datetime.now() - last_date)
+
 		if status is None:
 			print(f'\n{emojis["erro"]} Código {code} inválido')
 		else:
-			print(f'\n{emojis["postado"]} Código {code} - Ultima atualização há {status_date[0]} dias')
-			print_status(status)
+			print_all(status)
 
 main()
