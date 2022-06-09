@@ -12,21 +12,40 @@ emojis = {
 	'exportação': '🛫',
 	'erro': '❌',
 	'postado': '📦',
-	'saiu': '🚀'
+	'saiu': '🚀',
+	'confirmado' : '💸',
+	'pagamento': '💰',
+	'indo' : '➡️'
 }
 
 def get_status(codigo):
 	response = r.get('https://proxyapp.correios.com.br/v1/sro-rastro/' + codigo)
-	obj = response.json()['objetos'][0]
-	if 'mensagem' in obj:
-		if "SRO-019: Objeto inválido" in obj['mensagem']:
-			return None
 	if response.status_code == 200:
+		obj = response.json()['objetos'][0]
+		if 'mensagem' in obj:
+			if "SRO-019: Objeto inválido" in obj['mensagem']:
+				return None
 		return obj
 	else:
 		return None
+		
+def create_status_string(item):
+	unidade = item['unidade']
+	if 'nome' in unidade:
+		local = unidade['nome']
+	else:
+		local = unidade['endereco']['cidade'] + '-' + unidade['endereco']['uf']
+	if 'unidadeDestino' in item:
+		unidadeDestino = item['unidadeDestino']
+		if 'nome' in unidadeDestino:
+			dest = unidadeDestino['nome']
+		else:
+			dest = unidadeDestino['endereco']['cidade'] + '-' + unidadeDestino['endereco']['uf']
+		return (f'{local} {emojis["indo"]}  {dest}')
+	else:
+		return (local)
 
-def create_string(item):
+def create_event_string(item):
 	date = item['dtHrCriado']
 	hour = date[11:16]
 	date = date[8:10] + '/' + date[5:7] + '/' + date[0:4]
@@ -35,11 +54,15 @@ def create_string(item):
 	for emoji in emojis:
 		if emoji in desc:
 			string = emojis[emoji] + ' ' + string
+	status_string = create_status_string(item)
+	string = string + " | " + status_string
 	return string
 
 def print_status(status):
-	for item in status['eventos']:
-		print(create_string(item))
+	events = status['eventos']
+	for item in events:
+		print(create_event_string(item))
+
 
 def convert_date(date):
 	date = date[8:10] + '/' + date[5:7] + '/' + date[0:4] + ' ' + date[11:16]
@@ -51,7 +74,7 @@ def print_all(status):
 	status_date = datetime.now() - last_date
 	status_date = status_date.days
 
-	if status_date < 2:
+	if status_date < 2 and status_date != 0:
 		status_date = f'Última atualização há {status_date} dia'
 		print(f'\n{emojis["postado"]} Cód: {status["codObjeto"]} - {status_date}')
 	else:
